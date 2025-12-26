@@ -30,39 +30,59 @@ namespace WindowsFormsApp1
         public static List<Screen> screenList = new List<Screen>();
 
         public static string windowTitle = "NP6 Simulator";
+        private static readonly (string RelativePath, bool IsDirectory)[] RequiredPosDataItems =
+        {
+            ("screen.xml", false),
+            ("prodoutage.xml", false),
+            ("images/POS_images", true),
+            ("images/repository.1024x768.zip", false)
+        };
 
         static public bool ReadConfigurationFile()
         {
             if (!physicalStoreEnvironment)
             {
-                DialogResult r = MessageBox.Show("This instance is not running within a store environment. In the following dialog, please provide the location of NP6 register files. This folder is typically called Posdata.", windowTitle, MessageBoxButtons.OKCancel);
-                if (r == DialogResult.OK)
+                using (PosDataPromptForm prompt = new PosDataPromptForm(windowTitle))
                 {
-                    //loops location prompt until valid path
-                    while (true)
+                    DialogResult r = prompt.ShowDialog();
+                    if (r == DialogResult.OK)
                     {
-                        using (var folderDialog = new FolderBrowserDialog())
+                        //loops location prompt until valid path
+                        while (true)
                         {
-                            DialogResult result = folderDialog.ShowDialog();
-                            if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
+                            using (var folderDialog = new FolderBrowserDialog())
                             {
-                                posDataLocation = folderDialog.SelectedPath;
-                                SetPathVariables(Directory.GetFiles(folderDialog.SelectedPath));
-                                break;
-                            }
-                            else
-                            {
-                                if (MessageBox.Show("Please select a valid path.", windowTitle, MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                                DialogResult result = folderDialog.ShowDialog();
+                                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
                                 {
-                                    Application.Exit();
+                                    List<string> missingItems = GetMissingPosDataItems(folderDialog.SelectedPath);
+                                    if (missingItems.Count == 0)
+                                    {
+                                        posDataLocation = folderDialog.SelectedPath;
+                                        SetPathVariables(Directory.GetFiles(folderDialog.SelectedPath));
+                                        break;
+                                    }
+
+                                    MessageBox.Show(
+                                        "The selected folder is missing required items:\n\n" +
+                                        string.Join("\n", missingItems) +
+                                        "\n\nPlease select a valid Posdata folder.",
+                                        windowTitle);
+                                }
+                                else
+                                {
+                                    if (MessageBox.Show("Please select a valid path.", windowTitle, MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                                    {
+                                        Application.Exit();
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                else
-                {
-                    Application.Exit();
+                    else
+                    {
+                        Application.Exit();
+                    }
                 }
             }
 
@@ -208,6 +228,22 @@ namespace WindowsFormsApp1
 
 
 
+        }
+
+        private static List<string> GetMissingPosDataItems(string basePath)
+        {
+            List<string> missing = new List<string>();
+            foreach (var item in RequiredPosDataItems)
+            {
+                string path = Path.Combine(basePath, item.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+                bool exists = item.IsDirectory ? Directory.Exists(path) : File.Exists(path);
+                if (!exists)
+                {
+                    missing.Add(item.RelativePath);
+                }
+            }
+
+            return missing;
         }
 
         static public string ConvertColour(string colorToConvert)

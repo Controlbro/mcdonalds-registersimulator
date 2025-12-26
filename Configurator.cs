@@ -42,44 +42,47 @@ namespace WindowsFormsApp1
         {
             if (!physicalStoreEnvironment)
             {
-                DialogResult r = MessageBox.Show("This instance is not running within a store environment. In the following dialog, please provide the location of NP6 register files. This folder is typically called Posdata.", windowTitle, MessageBoxButtons.OKCancel);
-                if (r == DialogResult.OK)
+                using (PosDataPromptForm prompt = new PosDataPromptForm(windowTitle))
                 {
-                    //loops location prompt until valid path
-                    while (true)
+                    DialogResult r = prompt.ShowDialog();
+                    if (r == DialogResult.OK)
                     {
-                        using (var folderDialog = new FolderBrowserDialog())
+                        //loops location prompt until valid path
+                        while (true)
                         {
-                            DialogResult result = folderDialog.ShowDialog();
-                            if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
+                            using (var folderDialog = new FolderBrowserDialog())
                             {
-                                List<string> missingItems = GetMissingPosDataItems(folderDialog.SelectedPath);
-                                if (missingItems.Count == 0)
+                                DialogResult result = folderDialog.ShowDialog();
+                                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
                                 {
-                                    posDataLocation = folderDialog.SelectedPath;
-                                    SetPathVariables(Directory.GetFiles(folderDialog.SelectedPath));
-                                    break;
-                                }
+                                    List<string> missingItems = GetMissingPosDataItems(folderDialog.SelectedPath);
+                                    if (missingItems.Count == 0)
+                                    {
+                                        posDataLocation = folderDialog.SelectedPath;
+                                        SetPathVariables(Directory.GetFiles(folderDialog.SelectedPath));
+                                        break;
+                                    }
 
-                                MessageBox.Show(
-                                    "The selected folder is missing required items:\n\n" +
-                                    string.Join("\n", missingItems) +
-                                    "\n\nPlease select a valid Posdata folder.",
-                                    windowTitle);
-                            }
-                            else
-                            {
-                                if (MessageBox.Show("Please select a valid path.", windowTitle, MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                                    MessageBox.Show(
+                                        "The selected folder is missing required items:\n\n" +
+                                        string.Join("\n", missingItems) +
+                                        "\n\nPlease select a valid Posdata folder.",
+                                        windowTitle);
+                                }
+                                else
                                 {
-                                    Application.Exit();
+                                    if (MessageBox.Show("Please select a valid path.", windowTitle, MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                                    {
+                                        Application.Exit();
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                else
-                {
-                    Application.Exit();
+                    else
+                    {
+                        Application.Exit();
+                    }
                 }
             }
 

@@ -30,6 +30,13 @@ namespace WindowsFormsApp1
         public static List<Screen> screenList = new List<Screen>();
 
         public static string windowTitle = "NP6 Simulator";
+        private static readonly (string RelativePath, bool IsDirectory)[] RequiredPosDataItems =
+        {
+            ("screen.xml", false),
+            ("prodoutage.xml", false),
+            ("images/POS_images", true),
+            ("images/repository.1024x768.zip", false)
+        };
 
         static public bool ReadConfigurationFile()
         {
@@ -46,9 +53,19 @@ namespace WindowsFormsApp1
                             DialogResult result = folderDialog.ShowDialog();
                             if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
                             {
-                                posDataLocation = folderDialog.SelectedPath;
-                                SetPathVariables(Directory.GetFiles(folderDialog.SelectedPath));
-                                break;
+                                List<string> missingItems = GetMissingPosDataItems(folderDialog.SelectedPath);
+                                if (missingItems.Count == 0)
+                                {
+                                    posDataLocation = folderDialog.SelectedPath;
+                                    SetPathVariables(Directory.GetFiles(folderDialog.SelectedPath));
+                                    break;
+                                }
+
+                                MessageBox.Show(
+                                    "The selected folder is missing required items:\n\n" +
+                                    string.Join("\n", missingItems) +
+                                    "\n\nPlease select a valid Posdata folder.",
+                                    windowTitle);
                             }
                             else
                             {
@@ -208,6 +225,22 @@ namespace WindowsFormsApp1
 
 
 
+        }
+
+        private static List<string> GetMissingPosDataItems(string basePath)
+        {
+            List<string> missing = new List<string>();
+            foreach (var item in RequiredPosDataItems)
+            {
+                string path = Path.Combine(basePath, item.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+                bool exists = item.IsDirectory ? Directory.Exists(path) : File.Exists(path);
+                if (!exists)
+                {
+                    missing.Add(item.RelativePath);
+                }
+            }
+
+            return missing;
         }
 
         static public string ConvertColour(string colorToConvert)

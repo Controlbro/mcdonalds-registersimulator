@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Register>
+  <Screen number="1" title="Main Menu" type="1000" bgimage="">
+    <Button title="Sample Item" number="1" bitmap="" bitmapdn="" v="1" h="1" textup="Black" textdn="Black" bgup="White" bgdn="White" productCode="1">
+      <Action workflow="WF_ShowScreen">
+        <Parameter value="1" />
+      </Action>
+    </Button>
+  </Screen>
+</Register>
